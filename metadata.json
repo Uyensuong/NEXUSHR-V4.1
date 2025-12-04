@@ -1,0 +1,7 @@
+{
+  "name": "NEXUSHR V4.1",
+  "description": "A comprehensive Human Resource Information System featuring attendance tracking, payroll management, employee records, and contract handling.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
