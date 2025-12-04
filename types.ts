@@ -145,6 +145,17 @@ export interface Attendance {
   isExcused?: boolean;
 }
 
+// --- Payroll Enhanced Types ---
+export type PayrollStatus = 'PENDING_CALC' | 'WAITING_CONFIRMATION' | 'CONFIRMED' | 'DISPUTED' | 'PAID';
+
+export interface PayrollFeedback {
+  id: string;
+  content: string; // Employee question
+  response?: string; // HR Response
+  status: 'OPEN' | 'RESOLVED';
+  createdAt: string;
+}
+
 export interface Payroll {
   id: string;
   employeeId: string;
@@ -154,12 +165,15 @@ export interface Payroll {
   overtimeAmount: number;
   allowance: number;
   bonus: number;
-  kpiBonus: number; // New: Specific KPI Bonus
+  kpiBonus: number;
   deduction: number;
   netPay: number;
   currency: string;
-  status: 'PENDING' | 'PAID';
   
+  status: PayrollStatus; // Updated Enum
+  confirmedAt?: string; // Timestamp when employee clicked confirm
+  feedbacks?: PayrollFeedback[]; // List of disputes/questions
+
   // New fields for calculation
   salesTarget?: number;
   salesAchieved?: number;

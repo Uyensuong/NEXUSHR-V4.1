@@ -10,7 +10,8 @@ import {
   Activity,
   CheckCircle,
   Info,
-  XCircle
+  XCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -176,7 +177,10 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">{t('dashboard')}</h1>
-          <p className="text-slate-500">{t('dashboardSubtitle')}</p>
+          <div className="flex items-center gap-2 mt-1">
+             <p className="text-slate-500">{t('dashboardSubtitle')}</p>
+             <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100 font-medium">v4.2.0</span>
+          </div>
         </div>
       </div>
 
