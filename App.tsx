@@ -148,7 +148,7 @@ const Header = ({ setMobileOpen }: { setMobileOpen: (v: boolean) => void }) => {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, hasPermission } = useAuth();
 
   if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   
@@ -167,8 +167,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
 
-        {/* AI Assistant - Only for Admin */}
-        {user.role === Role.ADMIN && <AIAssistant />}
+        {/* AI Assistant - Enable for anyone with the permission (Admins & Staff with permission) */}
+        {hasPermission('USE_AI_ASSISTANT') && <AIAssistant />}
       </div>
     </div>
   );

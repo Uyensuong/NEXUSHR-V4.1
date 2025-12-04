@@ -21,7 +21,7 @@ export enum AttendanceType {
   OVERTIME = 'OVERTIME'
 }
 
-export type AttendanceStatus = 'PENDING' | 'COMPLETED' | 'LATE' | 'ABSENT';
+export type AttendanceStatus = 'PENDING' | 'COMPLETED' | 'LATE' | 'ABSENT' | 'LEAVE';
 
 export enum LeaveType {
   ANNUAL = 'ANNUAL',
@@ -154,6 +154,7 @@ export interface PayrollFeedback {
   response?: string; // HR Response
   status: 'OPEN' | 'RESOLVED';
   createdAt: string;
+  resolvedAt?: string;
 }
 
 export interface Payroll {

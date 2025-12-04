@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/mockService';
 import { Attendance, AttendanceType, Role, Employee, Regulation } from '../types';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
-import { Clock, Play, Square, Sun, Moon, Sunset, CheckCircle, AlertTriangle, Calendar, MapPin, Camera, RefreshCw, X, ChevronLeft, ChevronRight, Book, Info } from 'lucide-react';
+import { Clock, Play, Square, Sun, Moon, Sunset, CheckCircle, AlertTriangle, Calendar, MapPin, Camera, RefreshCw, X, ChevronLeft, ChevronRight, Book, Info, Umbrella } from 'lucide-react';
 import { format, getDaysInMonth, startOfMonth, addMonths, parse, parseISO } from 'date-fns';
 import { useLanguage, useAuth } from '../contexts/AppContext';
 import Webcam from 'react-webcam';
@@ -259,6 +259,13 @@ export default function AttendancePage() {
      }
 
      // Case 2: Has record (Status based logic)
+     if (log.status === 'LEAVE') {
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-purple-100 text-purple-600 border-r border-b border-purple-200 cursor-help" title={log.lateReason || 'Leave'}>
+            <Umbrella size={14} />
+          </div>
+        );
+     }
      if (log.status === 'LATE') {
        return (
          <div className="w-full h-full flex items-center justify-center bg-red-100 text-red-600 relative group cursor-help border-r border-b border-red-200">
@@ -388,15 +395,21 @@ export default function AttendancePage() {
                         className="flex justify-between items-center p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
                      >
                         <div className="flex items-center gap-3">
-                           <div className={`p-2 rounded-lg ${log.status === 'LATE' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                              <Clock size={18} />
+                           <div className={`p-2 rounded-lg ${log.status === 'LATE' ? 'bg-red-100 text-red-600' : log.status === 'LEAVE' ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-600'}`}>
+                              {log.status === 'LEAVE' ? <Umbrella size={18} /> : <Clock size={18} />}
                            </div>
                            <div>
                              <div className="font-medium text-slate-900">{format(new Date(log.date), 'MMM do')}</div>
                              <div className="text-xs text-slate-500 flex items-center gap-2">
-                               {log.checkIn ? format(new Date(log.checkIn), 'HH:mm') : '--'} - {log.checkOut ? format(new Date(log.checkOut), 'HH:mm') : '...'}
-                               {log.checkInLocation?.warning && <span className="text-red-500 flex items-center gap-0.5"><MapPin size={10}/> GPS Warn</span>}
-                               {log.faceImage && <span className="text-blue-500 flex items-center gap-0.5"><Camera size={10}/> FaceID</span>}
+                               {log.status === 'LEAVE' ? (
+                                   <span className="text-purple-600">On Leave</span>
+                               ) : (
+                                   <>
+                                    {log.checkIn ? format(new Date(log.checkIn), 'HH:mm') : '--'} - {log.checkOut ? format(new Date(log.checkOut), 'HH:mm') : '...'}
+                                    {log.checkInLocation?.warning && <span className="text-red-500 flex items-center gap-0.5"><MapPin size={10}/> GPS Warn</span>}
+                                    {log.faceImage && <span className="text-blue-500 flex items-center gap-0.5"><Camera size={10}/> FaceID</span>}
+                                   </>
+                               )}
                              </div>
                            </div>
                         </div>
@@ -407,6 +420,7 @@ export default function AttendancePage() {
                            )}
                            {log.status === 'PENDING' && <span className="text-xs font-bold text-yellow-600 block">{t('status_PENDING')}</span>}
                            {log.status === 'COMPLETED' && <span className="text-xs font-bold text-green-600 block">{t('status_COMPLETED')}</span>}
+                           {log.status === 'LEAVE' && <span className="text-xs font-bold text-purple-600 block">LEAVE</span>}
                         </div>
                      </div>
                   ))}
@@ -447,7 +461,7 @@ export default function AttendancePage() {
                                    key={idx}
                                    onClick={() => log && setSelectedAttendance(log)}
                                    className={`h-16 border rounded p-1 flex flex-col justify-between cursor-pointer hover:shadow-sm transition-all
-                                       ${!log ? 'bg-white' : log.status === 'LATE' ? 'bg-red-50 border-red-200' : log.status === 'PENDING' ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}
+                                       ${!log ? 'bg-white' : log.status === 'LATE' ? 'bg-red-50 border-red-200' : log.status === 'LEAVE' ? 'bg-purple-50 border-purple-200' : log.status === 'PENDING' ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}
                                        ${isToday ? 'ring-2 ring-indigo-500' : ''}
                                    `}
                                >
@@ -455,7 +469,7 @@ export default function AttendancePage() {
                                    {log && (
                                        <div className="flex justify-end">
                                            {log.faceImage && <Camera size={10} className="text-slate-400 mb-0.5 mr-1" />}
-                                           <div className={`w-2 h-2 rounded-full ${log.status === 'LATE' ? 'bg-red-500' : log.status === 'PENDING' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                                           <div className={`w-2 h-2 rounded-full ${log.status === 'LATE' ? 'bg-red-500' : log.status === 'LEAVE' ? 'bg-purple-500' : log.status === 'PENDING' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
                                        </div>
                                    )}
                                </div>
@@ -481,6 +495,7 @@ export default function AttendancePage() {
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div> {t('fullDay')}</div>
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div> {t('halfDay')}</div>
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div> {t('status_PENDING')}</div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 bg-purple-100 border border-purple-200 rounded"></div> Leave</div>
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div> {t('status_LATE')}</div>
                 <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-50 border border-red-100 rounded"></div> Weekend</div>
              </div>
@@ -663,27 +678,36 @@ export default function AttendancePage() {
                       <div className="text-center">
                           <h2 className="text-2xl font-bold text-slate-800">{format(new Date(selectedAttendance.date), 'EEEE, MMM do')}</h2>
                           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold mt-2 
-                              ${selectedAttendance.status === 'LATE' ? 'bg-red-100 text-red-700' : selectedAttendance.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}
+                              ${selectedAttendance.status === 'LATE' ? 'bg-red-100 text-red-700' : selectedAttendance.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : selectedAttendance.status === 'LEAVE' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}
                           `}>
-                              {t(`status_${selectedAttendance.status}`)}
+                              {selectedAttendance.status === 'LEAVE' ? 'On Leave' : t(`status_${selectedAttendance.status}`)}
                           </div>
                       </div>
 
-                      {/* Times */}
-                      <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                          <div>
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t('checkIn')}</p>
-                              <p className="text-lg font-mono font-bold text-slate-800">
-                                  {selectedAttendance.checkIn ? format(new Date(selectedAttendance.checkIn), 'HH:mm:ss') : '--:--'}
-                              </p>
+                      {/* LEAVE DETAILS */}
+                      {selectedAttendance.status === 'LEAVE' ? (
+                          <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-center">
+                              <Umbrella size={32} className="mx-auto text-purple-500 mb-2" />
+                              <p className="text-purple-800 font-bold">Approved Leave</p>
+                              <p className="text-sm text-purple-600 mt-1">{selectedAttendance.lateReason}</p>
                           </div>
-                          <div className="text-right">
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t('checkOut')}</p>
-                              <p className="text-lg font-mono font-bold text-slate-800">
-                                  {selectedAttendance.checkOut ? format(new Date(selectedAttendance.checkOut), 'HH:mm:ss') : '--:--'}
-                              </p>
+                      ) : (
+                          /* Times */
+                          <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                              <div>
+                                  <p className="text-xs text-slate-500 uppercase font-bold">{t('checkIn')}</p>
+                                  <p className="text-lg font-mono font-bold text-slate-800">
+                                      {selectedAttendance.checkIn ? format(new Date(selectedAttendance.checkIn), 'HH:mm:ss') : '--:--'}
+                                  </p>
+                              </div>
+                              <div className="text-right">
+                                  <p className="text-xs text-slate-500 uppercase font-bold">{t('checkOut')}</p>
+                                  <p className="text-lg font-mono font-bold text-slate-800">
+                                      {selectedAttendance.checkOut ? format(new Date(selectedAttendance.checkOut), 'HH:mm:ss') : '--:--'}
+                                  </p>
+                              </div>
                           </div>
-                      </div>
+                      )}
 
                       {/* Shift Breakdown */}
                       {selectedAttendance.shiftBreakdown && selectedAttendance.shiftBreakdown.length > 0 && (
@@ -707,19 +731,21 @@ export default function AttendancePage() {
                       )}
 
                       {/* Proof Image */}
-                      <div>
-                          <p className="text-xs text-slate-500 uppercase font-bold mb-2">{t('proofImage')}</p>
-                          <div className="bg-slate-100 rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-slate-200">
-                              {selectedAttendance.faceImage ? (
-                                  <img src={selectedAttendance.faceImage} alt="Face Proof" className="w-full h-full object-cover" />
-                              ) : (
-                                  <div className="text-slate-400 flex flex-col items-center">
-                                      <Camera size={24} className="mb-1" />
-                                      <span className="text-xs">{t('noImage')}</span>
-                                  </div>
-                              )}
+                      {selectedAttendance.status !== 'LEAVE' && (
+                          <div>
+                              <p className="text-xs text-slate-500 uppercase font-bold mb-2">{t('proofImage')}</p>
+                              <div className="bg-slate-100 rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-slate-200">
+                                  {selectedAttendance.faceImage ? (
+                                      <img src={selectedAttendance.faceImage} alt="Face Proof" className="w-full h-full object-cover" />
+                                  ) : (
+                                      <div className="text-slate-400 flex flex-col items-center">
+                                          <Camera size={24} className="mb-1" />
+                                          <span className="text-xs">{t('noImage')}</span>
+                                      </div>
+                                  )}
+                              </div>
                           </div>
-                      </div>
+                      )}
 
                       {/* Location Info */}
                       {selectedAttendance.checkInLocation && (

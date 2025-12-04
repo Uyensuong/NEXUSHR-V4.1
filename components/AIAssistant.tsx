@@ -1,13 +1,43 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, X, MessageSquare } from 'lucide-react';
-import { api } from '../services/mockService';
-import { useLanguage } from '../contexts/AppContext';
+import { GoogleGenAI } from "@google/genai";
+import { useLanguage, useAuth } from '../contexts/AppContext';
 import { AIChatMessage } from '../types';
 import { useNavigate } from 'react-router-dom';
 
+const SYSTEM_INSTRUCTION = `
+You are the "Nexus System Assistant", an AI helper for the Nexus HRIS platform. 
+Your goal is to assist users (Employees, Managers, Admins) in navigating and understanding the system.
+
+**System Capabilities:**
+- **Dashboard:** Overview of attendance and stats.
+- **Employees:** Manage profiles, permissions.
+- **Attendance:** Check-in/out, GPS/FaceID verification, History.
+- **Payroll:** Salary slips, 3P calculation, Commission.
+- **Leaves:** Leave requests (Annual, Sick).
+- **Contracts:** Employment and Partner contracts.
+- **KPI:** 3P Performance reviews, Self-assessment.
+- **Tasks:** Task Manager for daily work.
+- **Recruitment:** Manage candidates.
+- **Workflows:** SOPs and Procedures.
+
+**Navigation Commands:**
+If the user asks to go to a specific page, you MUST include a phrase like "Navigating to [Page]" in your response.
+- "Navigating to Payroll" -> /payroll
+- "Navigating to Employees" -> /employees
+- "Navigating to Attendance" -> /attendance
+- "Navigating to Dashboard" -> /
+- "Navigating to Config" -> /config
+- "Navigating to Tasks" -> /tasks
+- "Navigating to KPI" -> /kpi
+
+**Tone:** Helpful, Professional, Concise.
+`;
+
 export const AIAssistant: React.FC = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -43,13 +73,39 @@ export const AIAssistant: React.FC = () => {
     setIsTyping(true);
 
     try {
-      const responseText = await api.askSystemAI(userMsg.content);
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("API Key not configured");
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      // Prepare history for context
+      const history = messages.map(m => ({
+          role: m.role === 'ai' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+      }));
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+            ...history,
+            { role: 'user', parts: [{ text: userMsg.content }] }
+        ],
+        config: {
+            systemInstruction: `${SYSTEM_INSTRUCTION}\nCurrent User Role: ${user?.role}\nUser Name: ${user?.fullName}`,
+        }
+      });
+
+      const responseText = response.text || "I'm sorry, I couldn't process that.";
       
       // Check for navigation commands in response
       let actionLink = undefined;
       if (responseText.includes('Navigating to Payroll')) actionLink = '/payroll';
       if (responseText.includes('Navigating to Employees')) actionLink = '/employees';
-      if (responseText.includes('System Configuration')) actionLink = '/config';
+      if (responseText.includes('Navigating to Config')) actionLink = '/config';
+      if (responseText.includes('Navigating to Attendance')) actionLink = '/attendance';
+      if (responseText.includes('Navigating to Dashboard')) actionLink = '/';
+      if (responseText.includes('Navigating to Tasks')) actionLink = '/tasks';
+      if (responseText.includes('Navigating to KPI')) actionLink = '/kpi';
 
       const aiMsg: AIChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -63,15 +119,17 @@ export const AIAssistant: React.FC = () => {
       if (actionLink) {
           setTimeout(() => {
               navigate(actionLink!);
-              setIsOpen(false);
-          }, 1500);
+              // Optional: Close on nav
+              // setIsOpen(false); 
+          }, 1000);
       }
 
     } catch (error) {
+      console.error(error);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'ai',
-        content: "I encountered an error processing your request.",
+        content: "I encountered an error connecting to the AI service. Please check your connection or API key.",
         timestamp: new Date().toISOString()
       }]);
     } finally {
@@ -112,7 +170,7 @@ export const AIAssistant: React.FC = () => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
                     msg.role === 'user' 
                       ? 'bg-indigo-600 text-white rounded-tr-none' 
                       : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
